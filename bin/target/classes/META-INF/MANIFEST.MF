@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: Element
+Implementation-Version: 0.0.1-SNAPSHOT
+Built-By: Rushan Silva
+Implementation-Vendor-Id: com.element
+Build-Jdk: 1.8.0_161
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-bo
+ ot-starter-parent/Element
+Created-By: Maven Integration for Eclipse
+
