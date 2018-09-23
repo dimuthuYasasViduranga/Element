@@ -7,15 +7,15 @@ import java.io.IOException;
 
 public class VectorSpaceModelTester {
 
-	public static void main(String[] args) {
-		Document query = new Document("E:\\dataStructures\\Emotion Data\\query.txt");
-		Document d1 = new Document("E:\\dataStructures\\Emotion Data\\anger.txt");
-		Document d2 = new Document("E:\\dataStructures\\Emotion Data\\joy.txt");
-		Document d3 = new Document("E:\\dataStructures\\Emotion Data\\sadness.txt");
-		Document d4 = new Document("E:\\dataStructures\\Emotion Data\\guilt.txt");
-		Document d5 = new Document("E:\\dataStructures\\Emotion Data\\shame.txt");
-		Document d6 = new Document("E:\\dataStructures\\Emotion Data\\fear.txt");
-		Document d7 = new Document("E:\\dataStructures\\Emotion Data\\disgust.txt");
+	public void classifyComments() {
+		Document query = new Document("C:\\SLIIT\\Research\\Emotion Data\\query.txt");
+		Document d1 = new Document("C:\\SLIIT\\Research\\Emotion Data\\joy.txt");
+		Document d2 = new Document("C:\\SLIIT\\Research\\Emotion Data\\anger.txt");
+		Document d3 = new Document("C:\\SLIIT\\Research\\Emotion Data\\sadness.txt");
+		Document d4 = new Document("C:\\SLIIT\\Research\\Emotion Data\\guilt.txt");
+		Document d5 = new Document("C:\\SLIIT\\Research\\Emotion Data\\shame.txt");
+		Document d6 = new Document("C:\\SLIIT\\Research\\Emotion Data\\fear.txt");
+		Document d7 = new Document("C:\\SLIIT\\Research\\Emotion Data\\disgust.txt");
 
 		ArrayList<Document> documents = new ArrayList<Document>();
 		documents.add(query);

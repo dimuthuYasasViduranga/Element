@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.element.analytics.elasticSearch.Dao.QueryDAO;
+import com.element.analytics.emotionClassifier.VectorSpaceModelTester;
 
 @RestController
 public class ElasticController {
@@ -47,6 +48,12 @@ public class ElasticController {
 	@GetMapping(value = "/api/get")
 	public GetResponse getPostData() {
 		return dao.getPostData();
+	}
+	
+	@GetMapping(value = "/api/data")
+	public void getData() {
+		VectorSpaceModelTester vst = new VectorSpaceModelTester();
+		vst.classifyComments();
 	}
 	
 }
