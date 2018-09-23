@@ -2,6 +2,7 @@ package com.element.analytics.elasticSearch.Dao;
 
 import java.io.IOException;
 
+import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -27,7 +28,7 @@ public class QueryDAO {
 		this.elasticClient = client;
     }
 	
-	public IndexResponse createIndex(JSONObject root) {
+	public Result createIndex(JSONObject root) {
 		
 		try {
 			
@@ -44,7 +45,7 @@ public class QueryDAO {
 				for (int i = 0; i < sportsArray.length(); i++ ) {
 					builder.startObject();
 					builder.field("createdTime", sportsArray.getJSONObject(i).getString("created_time"));
-					builder.field("message", sportsArray.getJSONObject(i).getString("created_time"));
+					builder.field("message", sportsArray.getJSONObject(i).getString("message"));
 					builder.field("id", sportsArray.getJSONObject(i).getString("id"));
 					builder.endObject();
 				}
@@ -54,9 +55,11 @@ public class QueryDAO {
 			
 			IndexRequest indexRequest = new IndexRequest("customer_responses", "data", "1").source(builder);
 			
+			indexRequest.opType("create");
+			
 			indexResponse = elasticClient.index(indexRequest);
 			
-			return indexResponse;
+			return indexResponse.getResult();
 		} catch (IOException | JSONException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
