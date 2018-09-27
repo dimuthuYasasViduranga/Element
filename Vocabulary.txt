@@ -1,0 +1,4 @@
+not delicious=not tasty=tasteless food
+not clean=dirty
+not worth=expensive
+not sell display food=not sell display foods=sell display foods
