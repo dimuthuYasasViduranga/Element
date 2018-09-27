@@ -50,10 +50,11 @@ public class ElasticController {
 		return dao.getPostData();
 	}
 	
-	@GetMapping(value = "/api/data")
-	public void getData() {
+	@PostMapping(value = "/api/getEmCategry",consumes = "text/plain")
+	public String getEmotionCategory(@RequestBody String payload) {
+		System.out.println(payload);
 		VectorSpaceModelTester vst = new VectorSpaceModelTester();
-		vst.classifyComments();
+		return vst.classifyComments(payload);
 	}
 	
 }
