@@ -60,7 +60,11 @@
    			<version>20180130</version>
 		</dependency>
 		<dependency>
-
+		    <groupId>com.restfb</groupId>
+		    <artifactId>restfb</artifactId>
+	    	<version>2.9.0</version>
+		</dependency>
+		<dependency>
     		<groupId>com.googlecode.lambdaj</groupId>
     		<artifactId>lambdaj</artifactId>
     		<version>2.3.3</version>
