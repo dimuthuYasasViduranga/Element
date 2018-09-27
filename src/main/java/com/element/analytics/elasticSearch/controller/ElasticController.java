@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.element.analytics.elasticSearch.Dao.QueryDAO;
 import com.element.analytics.elasticSearch.Dao.UserDao;
+import com.element.analytics.emotionClassifier.VectorSpaceModelTester;
 
 @RestController
 public class ElasticController {
@@ -63,13 +64,13 @@ public class ElasticController {
 		return userDao.createUser(user);
 	}
 	
-<<<<<<< HEAD:src/main/java/com/element/analytics/elasticSearch/config/controller/ElasticController.java
 	@PostMapping(value = "/api/getEmCategry",consumes = "text/plain")
 	public String getEmotionCategory(@RequestBody String payload) {
 		System.out.println(payload);
 		VectorSpaceModelTester vst = new VectorSpaceModelTester();
 		return vst.classifyComments(payload);
-=======
+	}
+
 	@PostMapping(value = "/api/validate-user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public String validateUser(@RequestBody String document) throws JSONException, IOException {
 		JSONObject credentials = null;
@@ -85,7 +86,6 @@ public class ElasticController {
 	@GetMapping(value = "/api/get")
 	public GetResponse getPostData() {
 		return queryDao.getPostData();
->>>>>>> 259bccf5d510c806c49dbdf734c37349c2af420b:src/main/java/com/element/analytics/elasticSearch/controller/ElasticController.java
 	}
 	
 }
