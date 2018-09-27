@@ -175,7 +175,7 @@ public class Rake {
             final Rake rakeInstance = new Rake();
 
             final Sentences sentences = new SentenceTokenizer().split(text);
-            final StopList stopList = new StopList().generateStopWords(new FileUtil("Stoplist.txt"));
+            final StopList stopList = new StopList().generateStopWords(new FileUtil("C:\\Stoplist.txt"));
             final CandidateList candidateList = new CandidateList().generateKeywords(sentences, stopList.getStopWords());
 
 
@@ -187,7 +187,7 @@ public class Rake {
             System.out.println("sortedKeyWordCandidates = " +
                     rakeInstance.sortKeyWordCandidates(keywordCandidates));
 
-            final Vocabulary vocabulary = new Vocabulary().generateVocabulary(new FileUtil("Vocabulary.txt"));
+            final Vocabulary vocabulary = new Vocabulary().generateVocabulary(new FileUtil("C:\\Vocabulary.txt"));
 
             final Suggestion suggestion = new Suggestion()
                     .generateSuggestion(keywordCandidates, vocabulary.getVocabulary());

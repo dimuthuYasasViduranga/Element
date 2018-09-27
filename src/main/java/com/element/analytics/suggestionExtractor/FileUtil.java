@@ -39,9 +39,11 @@ public class FileUtil implements Iterator<String> {
     }
 
     private File getUserProvidedFile() {
-        ClassLoader thisClassLoader = getClass().getClassLoader();
-        URL fileUrl = thisClassLoader.getResource(filePath);
-        return new File(fileUrl.getFile());
+//    	System.out.println("file path: " + filePath);
+//        ClassLoader thisClassLoader = getClass().getClassLoader();
+//        URL fileUrl = thisClassLoader.getResource(filePath);
+//        System.out.println("test: " + fileUrl);
+        return new File(filePath);
     }
 
     public FileUtil iterator() throws IOException {
