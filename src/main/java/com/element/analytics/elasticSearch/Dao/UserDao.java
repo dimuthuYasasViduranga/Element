@@ -14,9 +14,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -89,6 +87,7 @@ public class UserDao {
     			builder.field("email", user.get("email"));
     			builder.field("salt", salt);
     			builder.field("password", securePassword);
+    			builder.field("facebookAccessToken", user.get("facebookAccessToken"));
     		}
     		builder.endObject();
     		
@@ -122,10 +121,15 @@ public class UserDao {
 		String email = (String) credentials.get("email");
 		String providedPassword = (String) credentials.get("password");
 		String userId = "";
+		String fname = "";
+		String lname = "";
+		String facebookAccessToken = "";
 		String securePassword = "";
 		String salt = "";
 		String accessToken = null;
 		boolean success = false;
+		
+		JSONObject data = null;
 		
 		String message = "Error occurred while execution";
 		
@@ -143,27 +147,43 @@ public class UserDao {
 		SearchHits hits = searchResponse.getHits();
 		
 		SearchHit[] searchHits = hits.getHits();
-		for (SearchHit hit : searchHits) {
-			userId = hit.getId();
-			String sourceAsString = hit.getSourceAsString();
-			Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-			securePassword = (String) sourceAsMap.get("password");
-			salt = (String) sourceAsMap.get("salt");
+		
+		if (searchHits.length == 0) {
+			success = false;
+			message = "No user found with this Email";
+		} else {
+			for (SearchHit hit : searchHits) {
+				userId = hit.getId();
+				String sourceAsString = hit.getSourceAsString();
+				Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+				securePassword = (String) sourceAsMap.get("password");
+				salt = (String) sourceAsMap.get("salt");
+				fname = (String) sourceAsMap.get("fname");
+				lname = (String) sourceAsMap.get("lname");
+			}
+			
+			data = new JSONObject()
+					.put("userId", userId)
+					.put("fname", fname)
+					.put("lname", lname)
+					.put("email", email)
+					.put("facebookAccessToken", facebookAccessToken)
+					.put("accessToken", accessToken);
+			
+			boolean passwordMatch = new PasswordEncryption().verifyUserPassword(providedPassword, securePassword, salt);
+			
+			if(passwordMatch) 
+	        {
+	            message = "Provided user password is correct.";
+	            accessToken = new PasswordEncryption().issueSecureToken(userId, providedPassword);
+	            success = true;
+	        } else {
+	            message = "Provided password is incorrect";
+	        }
 		}
 		
-		boolean passwordMatch = new PasswordEncryption().verifyUserPassword(providedPassword, securePassword, salt);
-		
-		if(passwordMatch) 
-        {
-            message = "Provided user password is correct.";
-            accessToken = new PasswordEncryption().issueSecureToken(userId, providedPassword);
-            success = true;
-        } else {
-            message = "Provided password is incorrect";
-        }
-		
 		String returnObj = new JSONObject()
-				.put("accessToken", accessToken)
+				.put("data", data)
 				.put("message", message)
 				.put("success", success).toString();
 		

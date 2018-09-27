@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.element.analytics.elasticSearch.Dao.FacebookDAO;
 import com.element.analytics.elasticSearch.Dao.QueryDAO;
 import com.element.analytics.elasticSearch.Dao.UserDao;
 
@@ -26,6 +27,8 @@ public class ElasticController {
     private QueryDAO queryDao;
 	@Autowired
 	private UserDao userDao;
+	@Autowired
+	private FacebookDAO facebookDao;
 	
 	@PostMapping(value = "/api/create", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public Result create(@RequestBody String document) {
@@ -50,8 +53,8 @@ public class ElasticController {
 		return (likes + shares + postId + pageId + comments);
 	}
 	
-	@CrossOrigin(origins = "http://localhost:3000")
-	@PostMapping(value = "/api/users", consumes = MediaType.APPLICATION_JSON_VALUE)
+	// @CrossOrigin(origins = "http://localhost:3000")
+	@PostMapping(value = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public String createUsers(@RequestBody String document) throws JSONException {
 		JSONObject user = null;
 		try {
@@ -63,6 +66,7 @@ public class ElasticController {
 		return userDao.createUser(user);
 	}
 	
+	// @CrossOrigin(origins = "http://localhost:3000")
 	@PostMapping(value = "/api/validate-user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public String validateUser(@RequestBody String document) throws JSONException, IOException {
 		JSONObject credentials = null;
@@ -80,5 +84,52 @@ public class ElasticController {
 		return queryDao.getPostData();
 	}
 	
+	@PostMapping(value = "/api/addPage", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String addPage(@RequestBody String document) throws JSONException {
+		JSONObject userData = null;
+		try {
+			userData = new JSONObject(document);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return facebookDao.savePage(userData);
+	}
+	
+	@PostMapping(value = "/api/getPages", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String getPages(@RequestBody String document) throws JSONException, IOException {
+		JSONObject userData = null;
+		try {
+			userData = new JSONObject(document);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return facebookDao.getPages(userData);
+	}
+	
+	@PostMapping(value = "/api/getPosts", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String getPosts(@RequestBody String document) throws JSONException, IOException {
+		JSONObject requestData = null;
+		try {
+			requestData = new JSONObject(document);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return facebookDao.getPosts(requestData);
+	}
+	
+	@PostMapping(value = "/api/getPostDetails", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String getPostData(@RequestBody String document) throws JSONException, IOException {
+		JSONObject requestData = null;
+		try {
+			requestData = new JSONObject(document);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return facebookDao.getPostData(requestData);
+	}
 }
 
