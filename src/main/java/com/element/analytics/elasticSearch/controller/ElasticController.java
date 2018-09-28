@@ -43,15 +43,9 @@ public class ElasticController {
 		return queryDao.createIndex(root);
 	}
 	
-	@PostMapping(value = "/api/test")
-	public String test(HttpServletRequest request) {
-		String likes = request.getParameter("likes");
-		String shares = request.getParameter("shares");
-		String postId = request.getParameter("postId");
-		String pageId = request.getParameter("pageId");
-		String comments = request.getParameter("comments");
-		
-		return (likes + shares + postId + pageId + comments);
+	@GetMapping(value = "/api/test")
+	public boolean test() throws IOException, JSONException {
+		return facebookDao.performSuggestionExtraction("315719342564507_318957702240671");
 	}
 	
 	// @CrossOrigin(origins = "http://localhost:3000")

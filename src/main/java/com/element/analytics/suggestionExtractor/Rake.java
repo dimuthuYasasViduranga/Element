@@ -161,16 +161,17 @@ public class Rake {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws Exception {
+    public JSONArray suggestionExtraction (String[] comments) throws Exception {
         
-        final String[] comments = new String[5];
-        comments[0] = "My review includes good and bad experience. My coffee and quiche were lovely. However, I asked for take away chock chip cookie whilst paying the bill. A young waiter took a box of cookies and was going to take out one for me. His older colleague told him to use one on display. I asked if that cookie is fresh. He said of course. When we tried it at home it was old and yucky. Suggestion-teach your staff not to sell display foods!";
-        comments[1] = "Friendly staff. AC chambers. Foods are not delicious.";
-        comments[2] = "Food is not tasty.";
-        comments[3] = "Tasteless food.";
-        comments[4] = "Food is tasteless.";
+//        final String[] comments = new String[5];
+//        comments[0] = "My review includes good and bad experience. My coffee and quiche were lovely. However, I asked for take away chock chip cookie whilst paying the bill. A young waiter took a box of cookies and was going to take out one for me. His older colleague told him to use one on display. I asked if that cookie is fresh. He said of course. When we tried it at home it was old and yucky. Suggestion-teach your staff not to sell display foods!";
+//        comments[1] = "Friendly staff. AC chambers. Foods are not delicious.";
+//        comments[2] = "Food is not tasty.";
+//        comments[3] = "Tasteless food.";
+//        comments[4] = "Food is tasteless.";
          
         for(final String text : comments){
+        	System.out.println("text: " + text);
             
             final Rake rakeInstance = new Rake();
 
@@ -199,6 +200,7 @@ public class Rake {
         }
     
         System.out.println(array);
+        return array;
     }
     
 }
