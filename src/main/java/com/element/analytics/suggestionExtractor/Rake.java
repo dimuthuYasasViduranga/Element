@@ -135,9 +135,9 @@ public class Rake {
     public void getSuggestionCount(Suggestion suggestion) throws JSONException {
         
         int count = 0;
-        
+
         for (int i=0; i<array.length(); i++) {
-            
+
             JSONObject object = array.getJSONObject(i);
             String sug = object.getString("suggestion");
             
@@ -163,6 +163,7 @@ public class Rake {
      */
     public JSONArray suggestionExtraction (String[] comments) throws Exception {
         
+    	array = new JSONArray();
 //        final String[] comments = new String[5];
 //        comments[0] = "My review includes good and bad experience. My coffee and quiche were lovely. However, I asked for take away chock chip cookie whilst paying the bill. A young waiter took a box of cookies and was going to take out one for me. His older colleague told him to use one on display. I asked if that cookie is fresh. He said of course. When we tried it at home it was old and yucky. Suggestion-teach your staff not to sell display foods!";
 //        comments[1] = "Friendly staff. AC chambers. Foods are not delicious.";

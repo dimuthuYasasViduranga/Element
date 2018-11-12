@@ -11,6 +11,8 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -120,10 +122,10 @@ public class UserDao {
 	public String VerifyPassword(JSONObject credentials) throws JSONException, IOException {
 		String email = (String) credentials.get("email");
 		String providedPassword = (String) credentials.get("password");
+		String facebookAccessToken = (String) credentials.get("facebookAccessToken");
 		String userId = "";
 		String fname = "";
 		String lname = "";
-		String facebookAccessToken = "";
 		String securePassword = "";
 		String salt = "";
 		String accessToken = null;
@@ -176,6 +178,22 @@ public class UserDao {
 	        {
 	            message = "Provided user password is correct.";
 	            accessToken = new PasswordEncryption().issueSecureToken(userId, providedPassword);
+	            
+	            XContentBuilder builder = XContentFactory.jsonBuilder();
+	    		
+	    		builder.startObject();
+	    		{
+	    			builder.field("facebookAccessToken", facebookAccessToken);
+	    			builder.field("accessToken", accessToken);
+	    		}
+	    		builder.endObject();
+	    		
+	    		UpdateRequest request = new UpdateRequest("users", "doc", userId)
+	    		        .doc(builder);
+	    		
+	    		elasticClient.update(request);
+	            
+	            data.put("accessToken", accessToken);
 	            success = true;
 	        } else {
 	            message = "Provided password is incorrect";
@@ -188,5 +206,85 @@ public class UserDao {
 				.put("success", success).toString();
 		
 		return returnObj;
+	}
+	
+	public String validateSesionId(JSONObject sessionObj) throws JSONException, IOException, InterruptedException {
+		String userId = (String) sessionObj.get("userId");
+		String receivedAccessToken = (String) sessionObj.get("accessToken");
+
+		String storedAccessToken = null;
+		boolean success = false;
+		
+		JSONObject data = null;
+		
+		String message = "Error occurred while execution";
+		
+		TimeUnit.SECONDS.sleep(2);
+		
+		if (userId.equals("")) {
+			data = new JSONObject()
+					.put("userId", userId)
+					.put("accessToken", receivedAccessToken)
+					.put("valid", false);
+			success = true;
+			message = "Method Sucessfully Executed";
+			
+			String returnObj = new JSONObject()
+					.put("data", data)
+					.put("message", message)
+					.put("success", success).toString();
+			
+			return returnObj;
+		} else {
+			SearchRequest searchRequest = new SearchRequest("users");
+			// searchRequest.types("doc");
+			
+			SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+			sourceBuilder.size(1);
+			MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("_id", userId);
+			sourceBuilder.query(matchQueryBuilder);
+			searchRequest.source(sourceBuilder);
+			
+			SearchResponse searchResponse = elasticClient.search(searchRequest);
+			
+			SearchHits hits = searchResponse.getHits();
+			
+			SearchHit[] searchHits = hits.getHits();
+			
+			if (searchHits.length == 0) {
+				success = false;
+				message = "No user found with this Email";
+			} else {
+				for (SearchHit hit : searchHits) {
+					userId = hit.getId();
+					String sourceAsString = hit.getSourceAsString();
+					Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+					storedAccessToken = (String) sourceAsMap.get("accessToken");
+				}
+			}
+			
+			if (receivedAccessToken.equals(storedAccessToken)) {
+				data = new JSONObject()
+						.put("userId", userId)
+						.put("accessToken", storedAccessToken)
+						.put("valid", true);
+				success = true;
+				message = "Method Sucessfully Executed";
+			} else {
+				data = new JSONObject()
+						.put("userId", userId)
+						.put("accessToken", storedAccessToken)
+						.put("valid", false);
+				success = true;
+				message = "Method Sucessfully Executed";
+			}
+			
+			String returnObj = new JSONObject()
+					.put("data", data)
+					.put("message", message)
+					.put("success", success).toString();
+			
+			return returnObj;
+		}
 	}
 }

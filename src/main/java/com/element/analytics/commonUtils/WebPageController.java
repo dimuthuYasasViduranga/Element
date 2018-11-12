@@ -9,7 +9,7 @@ public class WebPageController {
 	
 	@RequestMapping("/")
 	public String homePage(Model model) {
-		return "BasicView";
+		return "Login";
 	}
 
 }

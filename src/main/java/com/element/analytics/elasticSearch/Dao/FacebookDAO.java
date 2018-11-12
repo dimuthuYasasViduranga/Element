@@ -2,6 +2,7 @@ package com.element.analytics.elasticSearch.Dao;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
@@ -66,6 +68,8 @@ import com.restfb.types.Post;
 public class FacebookDAO {
 
 	final String spamUri = "http://localhost:5000/spam-detection";
+	final String emotionalSucessURI = "http://localhost:5000//emotions-success-prediction";
+	final String reactionSuccessURI = "http://localhost:5000/reactions-success-prediction";
 	private final RestHighLevelClient elasticClient;
 	public static String facebookAccessToken = null;
 	String homeTown = null;
@@ -512,7 +516,7 @@ public class FacebookDAO {
 	}
 	
 	@SuppressWarnings("deprecation")
-	public String getPostData(JSONObject requestData) throws JSONException, IOException {
+	public String getPostData(JSONObject requestData) throws Exception {
 		boolean success = false;
 		String message = null;
 		
@@ -585,34 +589,54 @@ public class FacebookDAO {
 		JSONObject requestObj = new JSONObject()
 				.put("data", comments);
 
-		String filteredComments = null;
+		JSONObject filteredComments = null;
 		String[] arr = null;
 		JSONObject[] storingFilteredComments = null;
 		
 		try {
-			filteredComments = sendPostRequest(requestObj);
-			arr = filteredComments.split(",");
-			for (String tok: arr) {
-				String part = tok.replace("[", "").replace("{", "").replace("}", "");
-				System.out.println("tok: " + tok.replace("[", "").replace("{", "").replace("}", ""));
-				if (part.contains("comment")) {
-					String[] c = part.split(":");
-					String comment = c[1];
-					System.out.println("comment: " + comment);
-					JSONObject jsonObj = new JSONObject()
-							.put("comment", comment);
-					if (storingFilteredComments == null) {
-						storingFilteredComments = new JSONObject[1];
-						storingFilteredComments[0] = jsonObj;
-					} else {
-						int len = storingFilteredComments.length;
-						JSONObject[] newObj = new JSONObject[len + 1];
-						System.arraycopy(storingFilteredComments, 0, newObj, 0, len);
-						newObj[len] = jsonObj;
-						storingFilteredComments = newObj;
-					}
+			filteredComments = sendPostRequest(requestObj, spamUri);
+			System.out.println("filteredComments: " + filteredComments);
+			System.out.println("comments: " + filteredComments.get("comments"));
+			JSONArray commentsArray = (JSONArray) filteredComments.get("comments");
+			for(int i = 0 ; i < commentsArray.length(); i++) {
+				JSONObject obj = commentsArray.getJSONObject(i);
+				JSONObject jsonObj = new JSONObject()
+						.put("comment", obj.get("comment"));
+				if (storingFilteredComments == null) {
+					storingFilteredComments = new JSONObject[1];
+					storingFilteredComments[0] = jsonObj;
+				} else {
+					int len = storingFilteredComments.length;
+					JSONObject[] newObj = new JSONObject[len + 1];
+					System.arraycopy(storingFilteredComments, 0, newObj, 0, len);
+					newObj[len] = jsonObj;
+					storingFilteredComments = newObj;
 				}
 			}
+			
+			System.out.println("filterddata: " + storingFilteredComments );
+//			arr = filteredComments.split(",");
+//			for (String tok: arr) {
+//				String part = tok.replace("[", "").replace("{", "").replace("}", "");
+//				System.out.println("tok: " + tok.replace("[", "").replace("{", "").replace("}", ""));
+//				if (part.contains("comment")) {
+//					String[] c = part.split(":");
+//					String comment = c[1];
+//					System.out.println("comment: " + comment);
+//					JSONObject jsonObj = new JSONObject()
+//							.put("comment", comment);
+//					if (storingFilteredComments == null) {
+//						storingFilteredComments = new JSONObject[1];
+//						storingFilteredComments[0] = jsonObj;
+//					} else {
+//						int len = storingFilteredComments.length;
+//						JSONObject[] newObj = new JSONObject[len + 1];
+//						System.arraycopy(storingFilteredComments, 0, newObj, 0, len);
+//						newObj[len] = jsonObj;
+//						storingFilteredComments = newObj;
+//					}
+//				}
+//			}
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -624,7 +648,18 @@ public class FacebookDAO {
 		if (storeStatus == true) {
 			success = true;
 			message = "All processes were performed successfully";
-//			performEmotionAnalysis(postId);
+//     		boolean emotionStatus = performEmotionAnalysis(postId);
+			boolean emotionStatus = true;
+     		if (emotionStatus == true) {
+     			boolean suggestionStatus = performSuggestionExtraction(postId);
+     			if (suggestionStatus == true) {
+     				boolean successStatus = performSuccessPrediction(postId);
+     				if (successStatus) {
+     					String result = getFinalOutput(postId);
+         				return result;
+     				}
+     			}
+     		}
 		} else {
 			success = false;
 			message = "Error occurred while processing";
@@ -638,12 +673,55 @@ public class FacebookDAO {
 		return returnObj;
 	}
 	
-	private String sendPostRequest(JSONObject requestObj) throws Exception {
+	public String getFinalOutput(String postId) throws JSONException, IOException {
+		SearchRequest searchRequest = new SearchRequest("posts");
+		Map<String, Object> emotions = null;
+		List<Object> suggestions  = null;
+		Map<String, Object> success = null;
 		
-//		String url = "http://localhost:5000/spam-detection";
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.size(1);
+		MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("postId", postId);
+		sourceBuilder.query(matchQueryBuilder);
+		searchRequest.source(sourceBuilder);
+		
+		SearchResponse searchResponse = elasticClient.search(searchRequest);
+		
+		SearchHits hits = searchResponse.getHits();
+		
+		SearchHit[] searchHits = hits.getHits();
+		
+		if (searchHits.length == 0) {
+			String returnObj = new JSONObject()
+					.put("success", false)
+					.put("message", "Error Occured while processing")
+					.put("data", null).toString();
+			return returnObj;
+		} else {
+			for (SearchHit hit : searchHits) {
+				String sourceAsString = hit.getSourceAsString();
+				Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+				emotions = (Map<String, Object>) sourceAsMap.get("emotions");
+				suggestions = (List<Object>) sourceAsMap.get("suggestions");
+				success = (Map<String, Object>) sourceAsMap.get("success");
+			}
+			JSONObject data = new JSONObject()
+					.put("emotions", emotions)
+					.put("suggestions", suggestions)
+					.put("successRate", success);
+			
+			String returnObj = new JSONObject()
+					.put("success", true)
+					.put("message", "Analysis process completed successfully")
+					.put("data", data).toString();
+			return returnObj;
+		}
+	}
+	
+	private JSONObject sendPostRequest(JSONObject requestObj, String URI) throws Exception {
 
 		CloseableHttpClient httpclient = HttpClients.createDefault();
-		HttpPost post = new HttpPost(spamUri);
+		HttpPost post = new HttpPost(URI);
 
 		post.setHeader("Accept", "application/json");
 		post.setHeader("Content-type", "application/json");
@@ -651,32 +729,89 @@ public class FacebookDAO {
 		StringEntity entity = new StringEntity(requestObj.toString());
 
 		post.setEntity(entity);
-
-		HttpResponse response = httpclient.execute(post);
-		System.out.println("\nSending 'POST' request to URL : " + spamUri);
-		System.out.println("Post parameters : " + post.getEntity());
-		System.out.println("Response Code : " + 
-                                    response.getStatusLine().getStatusCode());
-
-		System.out.println("response: " + response.getEntity().getContent());
 		
-		
-		BufferedReader rd = new BufferedReader(
-                        new InputStreamReader(response.getEntity().getContent()));
+		HttpResponse response;
+		String result = null;
 
-		StringBuffer result = new StringBuffer();
-//		JSONObject responseData = new JSONObject();
-		String line = "";
-		while ((line = rd.readLine()) != null) {
-//			System.out.println("line: " + line);
-//			responseData.put("data", line);
-			result.append(line);
-		}
-
-//		System.out.println("jsonRes: " + responseData);
-//		System.out.println(result.toString());
+//		HttpResponse response = httpclient.execute(post);
+//		System.out.println("\nSending 'POST' request to URL : " + spamUri);
+//		System.out.println("Post parameters : " + post.getEntity());
+//		System.out.println("Response Code : " + 
+//                                    response.getStatusLine().getStatusCode());
+//
+//		System.out.println("response: " + response.getEntity().getContent());
+//		
+//		
+//		BufferedReader rd = new BufferedReader(
+//                        new InputStreamReader(response.getEntity().getContent()));
+//
+//		StringBuffer result = new StringBuffer();
+////		JSONObject responseData = new JSONObject();
+//		String line = "";
+//		while ((line = rd.readLine()) != null) {
+////			System.out.println("line: " + line);
+////			responseData.put("data", line);
+//			result.append(line);
+//		}
+//
+////		System.out.println("jsonRes: " + responseData);
+////		System.out.println(result.toString());
+//		
+//		return result.toString();
 		
-		return result.toString();
+		try {
+	        response = httpclient.execute(post);        
+
+	        if (response != null) {
+
+	            // A Simple JSON Response Read
+	            InputStream instream = response.getEntity().getContent();
+	            result = convertStreamToString(instream);
+	            // now you have the string representation of the HTML request
+	            System.out.println("RESPONSE: " + result);
+	            instream.close();
+	            if (response.getStatusLine().getStatusCode() == 200) {
+//	                netState.setLogginDone(true);
+	            	System.out.println("Successfull");
+	            }
+
+	        }
+	        // Headers
+	        org.apache.http.Header[] headers = response.getAllHeaders();
+	        for (int i = 0; i < headers.length; i++) {
+	            System.out.println(headers[i]);
+	        }
+	    } catch (ClientProtocolException e1) {
+	        // TODO Auto-generated catch block
+	        e1.printStackTrace();
+	    } catch (IOException e1) {
+	        // TODO Auto-generated catch block
+	        e1.printStackTrace();
+	    }
+		JSONObject myObject = new JSONObject(result);
+	    return myObject;
+	}
+	
+	private static String convertStreamToString(InputStream is) {
+
+	    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+	    StringBuilder sb = new StringBuilder();
+
+	    String line = null;
+	    try {
+	        while ((line = reader.readLine()) != null) {
+	            sb.append(line + "\n");
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    } finally {
+	        try {
+	            is.close();
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	    return sb.toString();
 	}
 
 	public boolean performEmotionAnalysis(String postId) throws IOException, JSONException {
@@ -829,9 +964,105 @@ public class FacebookDAO {
 				builder.startObject();
 				builder.field("suggestion", suggestions.getJSONObject(i).get("suggestion"));
 				builder.field("count", suggestions.getJSONObject(i).get("count"));
+				System.out.println("count111: " + suggestions.getJSONObject(i).get("count"));
 				builder.endObject();
 			}
 			builder.endArray();;
+		}
+		builder.endObject();
+		
+		UpdateRequest request = new UpdateRequest("posts", "doc", id)
+		        .doc(builder);
+		
+		UpdateResponse updateResponse = elasticClient.update(request);
+		
+		String index = updateResponse.getIndex();
+		
+		if (index == "posts") {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean performSuccessPrediction(String postId) throws Exception {
+		String id = null;
+		int[] emotionsArray = new int[7];
+		int[] statsArray = new int[9];
+		Map<String, Object> emotionsObject = null;
+		JSONObject emotionsSuccess = null;
+		JSONObject statsSuccess = null;
+		
+		String[] emotionLabels = new String[7];
+		emotionLabels[0] = "shame";
+		emotionLabels[1] = "sadness";
+		emotionLabels[2] = "guilt";
+		emotionLabels[3] = "joy";
+		emotionLabels[4] = "disgust";
+		emotionLabels[5] = "anger";
+		emotionLabels[6] = "fear";
+		
+		statsArray[0] = 10;
+		statsArray[1] = 5;
+		statsArray[2] = 0;
+		statsArray[3] = 3;
+		statsArray[4] = 0;
+		statsArray[5] = 0;
+		statsArray[6] = 15;
+		statsArray[7] = 0;
+		statsArray[8] = 39;
+		
+		SearchRequest searchRequest = new SearchRequest("posts");
+		
+		SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+		sourceBuilder.size(1);
+		MatchQueryBuilder matchQueryBuilder = new MatchQueryBuilder("postId", postId);
+		sourceBuilder.query(matchQueryBuilder);
+		searchRequest.source(sourceBuilder);
+		
+		SearchResponse searchResponse = elasticClient.search(searchRequest);
+		
+		SearchHits hits = searchResponse.getHits();
+		
+		SearchHit[] searchHits = hits.getHits();
+		
+		if (searchHits.length == 0) {
+			return false;
+		} else {
+			for (SearchHit hit : searchHits) {
+				id = hit.getId();
+				String sourceAsString = hit.getSourceAsString();
+				Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+				emotionsObject = (Map<String, Object>) sourceAsMap.get("emotions");
+			}
+		}
+		
+		for(int i = 0; i < emotionLabels.length; i++) {
+			emotionsArray[i] = (int) emotionsObject.get(emotionLabels[i]);
+		}
+		
+		JSONObject emotionsRequest = new JSONObject()
+				.put("data", emotionsArray);
+		
+		emotionsSuccess = sendPostRequest(emotionsRequest, emotionalSucessURI);
+		
+		System.out.println("emotions: " + emotionsSuccess);
+		
+		JSONObject statsRequest = new JSONObject()
+				.put("data", statsArray);
+		
+		statsSuccess = sendPostRequest(emotionsRequest, emotionalSucessURI);
+		
+		System.out.println("stats: " + statsSuccess);
+		
+		XContentBuilder builder = XContentFactory.jsonBuilder();
+		
+		builder.startObject();
+		{
+			builder.startObject("success");
+				builder.field("Statistics", statsSuccess.get("success"));
+				builder.field("Emotions", emotionsSuccess.get("success"));
+			builder.endObject();
 		}
 		builder.endObject();
 		

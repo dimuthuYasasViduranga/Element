@@ -48,7 +48,7 @@ public class ElasticController {
 		return facebookDao.performSuggestionExtraction("315719342564507_318957702240671");
 	}
 	
-	// @CrossOrigin(origins = "http://localhost:3000")
+	@CrossOrigin(origins = "http://localhost:3000")
 	@PostMapping(value = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public String createUsers(@RequestBody String document) throws JSONException {
 		JSONObject user = null;
@@ -70,6 +70,7 @@ public class ElasticController {
 
 	}
 
+	@CrossOrigin(origins = "http://localhost:3000")
 	@PostMapping(value = "/api/validate-user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 	public String validateUser(@RequestBody String document) throws JSONException, IOException {
 		JSONObject credentials = null;
@@ -80,6 +81,19 @@ public class ElasticController {
 			e.printStackTrace();
 		}
 		return userDao.VerifyPassword(credentials);
+	}
+	
+	@CrossOrigin(origins = "http://localhost:3000")
+	@PostMapping(value = "/api/validate-session", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String validateSession(@RequestBody String document) throws JSONException, IOException, InterruptedException {
+		JSONObject session = null;
+		try {
+			session = new JSONObject(document);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return userDao.validateSesionId(session);
 	}
 	
 	@GetMapping(value = "/api/get")
@@ -123,8 +137,9 @@ public class ElasticController {
 		return facebookDao.getPosts(requestData);
 	}
 	
+	@CrossOrigin(origins = "http://localhost:3000")
 	@PostMapping(value = "/api/getPostDetails", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
-	public String getPostData(@RequestBody String document) throws JSONException, IOException {
+	public String getPostData(@RequestBody String document) throws Exception {
 		JSONObject requestData = null;
 		try {
 			requestData = new JSONObject(document);
